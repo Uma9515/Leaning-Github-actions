@@ -14,6 +14,6 @@ jobs:
 
    steps:
      - name: Greetings
-       run: echo "Namastey"
+       run: echo "${{inputs.name}}"
   
   
