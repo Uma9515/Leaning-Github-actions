@@ -16,6 +16,7 @@ on:
      Gender:
       description: "Gender"
       type: choice
+      required: true
       options:
         - Female
         - Male
