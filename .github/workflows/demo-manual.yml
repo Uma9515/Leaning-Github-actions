@@ -1,0 +1,15 @@
+name : manual_workflow
+
+on:
+  - workflow_dispatch:
+
+
+jobs:
+  demo2:
+   runs-on: ubuntu-latest
+
+   steps:
+     - name: Greetings
+       run: echo "Namastey"
+  
+  
