@@ -9,10 +9,17 @@ on:
        default: 'test'
 
      age:
-       description: "age"
+       description: "Age"
        type: "number"
        required: true
 
+     Gender:
+      description: "Gender"
+      type: choice
+      options:
+        - Female
+        - Male
+     
 jobs:
   demo1:
    runs-on: ubuntu-latest
