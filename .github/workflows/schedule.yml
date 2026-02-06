@@ -1,7 +1,6 @@
 name: schedule_workflow
 
 on:
- workflow_dispatch: 
  schedule:
    - cron: "*/5 * * * *"
 
