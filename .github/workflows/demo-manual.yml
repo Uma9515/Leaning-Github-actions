@@ -26,10 +26,13 @@ jobs:
    runs-on: ubuntu-latest
 
    steps:
-     - name: Greetings
+     - name: Name
        run: echo "${{inputs.name}}"
 
      - name: Age
        run: echo ${{inputs.age}}
+
+     - name: Gender
+       run: echo "${{inputs.Gender}}"
   
   
