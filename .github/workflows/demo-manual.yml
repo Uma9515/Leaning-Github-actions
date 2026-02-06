@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
    inputs:
      name: 
-      description: "Name"
-      type: string
-      default: 'test'
+       description: "Name"
+       type: string
+       default: 'test'
+
+     age:
+       description: "age"
+       type: "number"
+       required: true
 
 jobs:
   demo1:
@@ -15,5 +20,8 @@ jobs:
    steps:
      - name: Greetings
        run: echo "${{inputs.name}}"
+
+     - name: Age
+       run: echo ${{inputs.age}}
   
   
