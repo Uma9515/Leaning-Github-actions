@@ -20,6 +20,11 @@ on:
       options:
         - Female
         - Male
+
+     Married:
+       description: "Is Married ?"
+       type: boolean
+       required: false
      
 jobs:
   demo1:
