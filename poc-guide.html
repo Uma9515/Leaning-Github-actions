@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AWS POC – Step by Step Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --border: #1e2230;
+    --aws: #ff9900;
+    --tf: #7c4dff;
+    --gh: #2dde98;
+    --text: #e8eaf0;
+    --muted: #5a6070;
+    --done: #2dde98;
+    --warn: #ff9900;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+
+  /* ── Header ── */
+  .hero {
+    background: linear-gradient(160deg, #0d1117 0%, #111827 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 36px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,153,0,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: rgba(255,153,0,0.12);
+    border: 1px solid rgba(255,153,0,0.3);
+    color: var(--aws);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 50px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #fff 30%, #ff9900);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 520px;
+    margin: 0 auto 28px;
+    line-height: 1.7;
+  }
+  .tech-badges {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .tech-badge {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tech-badge.aws { background: rgba(255,153,0,0.15); color: #ff9900; border: 1px solid rgba(255,153,0,0.3); }
+  .tech-badge.tf  { background: rgba(124,77,255,0.15); color: #a07cff; border: 1px solid rgba(124,77,255,0.3); }
+  .tech-badge.gh  { background: rgba(45,222,152,0.12); color: #2dde98; border: 1px solid rgba(45,222,152,0.3); }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 32px 40px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .flow-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 18px;
+    text-align: center;
+  }
+  .flow-icon { font-size: 1.6rem; }
+  .flow-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; color: var(--muted); text-transform: uppercase; }
+  .flow-arrow { font-size: 1.2rem; color: var(--border); padding: 0 4px; align-self: center; margin-bottom: 20px; }
+
+  /* ── Progress tracker ── */
+  .tracker {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 24px 0;
+  }
+  .tracker-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 10px;
+    height: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff9900, #2dde98);
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-text {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 32px;
+  }
+  .progress-text span { color: var(--aws); font-weight: 700; }
+
+  /* ── Sections ── */
+  .section {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 36px 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-icon { font-size: 1.4rem; }
+  .phase-title { font-size: 1.1rem; font-weight: 800; }
+  .phase-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .phase-count {
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* ── Step card ── */
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .step-card.completed { border-color: rgba(45,222,152,0.3); }
+  .step-card.completed .step-header { background: rgba(45,222,152,0.04); }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .step-header:hover { background: rgba(255,255,255,0.02); }
+
+  .step-num {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--border);
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .step-card.completed .step-num {
+    background: rgba(45,222,152,0.2);
+    color: var(--done);
+  }
+
+  .step-info { flex: 1; }
+  .step-title { font-size: 0.95rem; font-weight: 700; }
+  .step-desc { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  .step-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-aws  { background: rgba(255,153,0,0.12);   color: #ff9900; }
+  .tag-gh   { background: rgba(45,222,152,0.12);  color: #2dde98; }
+  .tag-tf   { background: rgba(124,77,255,0.15);  color: #a07cff; }
+  .tag-done { background: rgba(45,222,152,0.15);  color: #2dde98; }
+  .tag-live { background: rgba(255,100,100,0.15); color: #ff7070; }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 0.9rem;
+    transition: transform 0.2s;
+    margin-left: 8px;
+  }
+  .step-card.open .chevron { transform: rotate(90deg); }
+
+  /* ── Step body ── */
+  .step-body {
+    display: none;
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .step-card.open .step-body { display: block; }
+
+  .step-body p {
+    font-size: 0.88rem;
+    color: #a0aab8;
+    line-height: 1.7;
+    margin: 14px 0 10px;
+  }
+
+  /* Code block */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 10px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    position: relative;
+    overflow-x: auto;
+  }
+  .code-block .comment { color: #4a5568; }
+  .code-block .cmd     { color: #e8eaf0; }
+  .code-block .val     { color: #ff9900; }
+  .code-block .key     { color: #7c9fff; }
+  .code-block .str     { color: #2dde98; }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--border);
+    border: none;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: #2a2f3e; color: var(--text); }
+  .copy-btn.copied { color: var(--done); }
+
+  /* Info boxes */
+  .info-box {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .info-box.tip   { background: rgba(45,222,152,0.07);  border: 1px solid rgba(45,222,152,0.2);  color: #9ef5d3; }
+  .info-box.warn  { background: rgba(255,153,0,0.07);   border: 1px solid rgba(255,153,0,0.2);   color: #ffd080; }
+  .info-box.note  { background: rgba(124,77,255,0.07);  border: 1px solid rgba(124,77,255,0.2);  color: #c0a8ff; }
+  .info-icon { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+
+  /* Image placeholder */
+  .screen-ref {
+    background: linear-gradient(135deg, #0d1117, #111827);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 10px 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .screen-ref strong { color: #8090a8; display: block; margin-bottom: 4px; }
+
+  /* Table */
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+    margin: 12px 0;
+  }
+  .info-table th {
+    background: var(--border);
+    padding: 8px 14px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+  }
+  .info-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: #a0aab8;
+    vertical-align: top;
+  }
+  .info-table td:first-child { color: var(--text); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+  .info-table tr:last-child td { border-bottom: none; }
+
+  /* Mark done button */
+  .done-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 8px 18px;
+    background: rgba(45,222,152,0.1);
+    border: 1px solid rgba(45,222,152,0.25);
+    color: #2dde98;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    transition: all 0.15s;
+  }
+  .done-btn:hover { background: rgba(45,222,152,0.18); }
+  .step-card.completed .done-btn {
+    background: rgba(45,222,152,0.18);
+    border-color: rgba(45,222,152,0.5);
+  }
+
+  /* ── Final section ── */
+  .final-box {
+    max-width: 860px;
+    margin: 32px auto 0;
+    padding: 0 24px;
+  }
+  .final-card {
+    background: linear-gradient(135deg, rgba(255,153,0,0.08), rgba(45,222,152,0.06));
+    border: 1px solid rgba(255,153,0,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+  }
+  .final-card h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+  .final-card p  { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+  .url-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--aws);
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="hero-tag">Complete POC Guide</div>
+  <h1>AWS + Terraform + GitHub Actions</h1>
+  <p>A complete walkthrough from zero to a live website on AWS. Follow each step in order — no experience needed.</p>
+  <div class="tech-badges">
+    <span class="tech-badge aws">☁️ AWS S3 + CloudFront</span>
+    <span class="tech-badge tf">⚙️ Terraform</span>
+    <span class="tech-badge gh">⚡ GitHub Actions</span>
+  </div>
+</div>
+
+<!-- ── Flow ── -->
+<div class="flow">
+  <div class="flow-item"><div class="flow-icon">💻</div><div class="flow-label">Your Machine</div></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-item"><div class="flow-icon">🐙</div><div class="flow-label">GitHub Repo</div></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-item"><div class="flow-icon">⚡</div><div class="flow-label">GH Actions</div></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-item"><div class="flow-icon">⚙️</div><div class="flow-label">Terraform</div></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-item"><div class="flow-icon">🪣</div><div class="flow-label">AWS S3</div></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-item"><div class="flow-icon">🌐</div><div class="flow-label">CloudFront</div></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-item"><div class="flow-icon">🎉</div><div class="flow-label">Live Site!</div></div>
+</div>
+
+<!-- ── Progress ── -->
+<div class="tracker">
+  <div class="tracker-title">Your Progress</div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
+  <div class="progress-text" id="progressText"><span>0</span> of 12 steps completed</div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!--  PHASE 1 – Prerequisites              -->
+<!-- ══════════════════════════════════════ -->
+<div class="section">
+
+  <div class="phase-header">
+    <span class="phase-icon">🛠️</span>
+    <div>
+      <div class="phase-title">Phase 1 — Prerequisites</div>
+      <div class="phase-sub">Install tools on your computer (one-time setup)</div>
+    </div>
+    <span class="phase-count">Steps 1–3</span>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step-card" id="card-1">
+    <div class="step-header" onclick="toggleStep(1)">
+      <div class="step-num">1</div>
+      <div class="step-info">
+        <div class="step-title">Install Git on your computer</div>
+        <div class="step-desc">Version control tool — needed to push code to GitHub</div>
+      </div>
+      <span class="step-tag tag-gh">Git</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>Git lets you save and upload your code to GitHub. Check if you already have it first:</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'git --version')">copy</button>
+        <span class="cmd">git --version</span>
+      </div>
+      <p>If it shows a version number (e.g. <code style="color:#ff9900">git version 2.x.x</code>) you're done — skip to step 2!</p>
+      <p>If not, download and install from:</p>
+      <div class="info-box tip"><span class="info-icon">🔗</span><span><strong>Windows:</strong> https://git-scm.com/download/win — run the installer, click Next on everything<br><strong>Mac:</strong> Run <code>xcode-select --install</code> in Terminal<br><strong>Linux:</strong> <code>sudo apt install git</code></span></div>
+      <button class="done-btn" onclick="markDone(1)">✓ Mark as done</button>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-card" id="card-2">
+    <div class="step-header" onclick="toggleStep(2)">
+      <div class="step-num">2</div>
+      <div class="step-info">
+        <div class="step-title">Install Terraform</div>
+        <div class="step-desc">The tool that creates AWS resources automatically</div>
+      </div>
+      <span class="step-tag tag-tf">Terraform</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>Terraform reads your <code style="color:#ff9900">.tf</code> files and builds AWS infrastructure for you. Download it from:</p>
+      <div class="info-box tip"><span class="info-icon">🔗</span><span><strong>All platforms:</strong> https://developer.hashicorp.com/terraform/downloads<br>Download, unzip, and move it to a folder in your PATH (the installer does this automatically on Windows).</span></div>
+      <p>Verify installation:</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'terraform --version')">copy</button>
+        <span class="cmd">terraform --version</span>
+      </div>
+      <div class="info-box warn"><span class="info-icon">⚠️</span><span>You need <strong>Terraform v1.3.0 or higher</strong>. If older, re-download.</span></div>
+      <button class="done-btn" onclick="markDone(2)">✓ Mark as done</button>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-card" id="card-3">
+    <div class="step-header" onclick="toggleStep(3)">
+      <div class="step-num">3</div>
+      <div class="step-info">
+        <div class="step-title">Install AWS CLI</div>
+        <div class="step-desc">Command-line tool to talk to your AWS account</div>
+      </div>
+      <span class="step-tag tag-aws">AWS</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>The AWS CLI lets Terraform and GitHub Actions communicate with your AWS sandbox account.</p>
+      <div class="info-box tip"><span class="info-icon">🔗</span><span><strong>Download:</strong> https://aws.amazon.com/cli/<br>Windows: Run the .msi installer | Mac: Run the .pkg installer</span></div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'aws --version')">copy</button>
+        <span class="cmd">aws --version</span>
+      </div>
+      <p>You should see something like <span style="color:#2dde98">aws-cli/2.x.x</span>.</p>
+      <button class="done-btn" onclick="markDone(3)">✓ Mark as done</button>
+    </div>
+  </div>
+
+</div><!-- /section -->
+
+<!-- ══════════════════════════════════════ -->
+<!--  PHASE 2 – AWS Setup                  -->
+<!-- ══════════════════════════════════════ -->
+<div class="section">
+
+  <div class="phase-header">
+    <span class="phase-icon">☁️</span>
+    <div>
+      <div class="phase-title">Phase 2 — AWS Setup</div>
+      <div class="phase-sub">Get your AWS sandbox credentials</div>
+    </div>
+    <span class="phase-count">Steps 4–5</span>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-card" id="card-4">
+    <div class="step-header" onclick="toggleStep(4)">
+      <div class="step-num">4</div>
+      <div class="step-info">
+        <div class="step-title">Get your AWS Access Keys</div>
+        <div class="step-desc">Credentials so tools can talk to your AWS sandbox</div>
+      </div>
+      <span class="step-tag tag-aws">AWS IAM</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>Follow these steps inside the AWS console:</p>
+      <table class="info-table">
+        <tr><th>#</th><th>What to do</th></tr>
+        <tr><td>1</td><td>Log in to your <strong>AWS sandbox console</strong> at console.aws.amazon.com</td></tr>
+        <tr><td>2</td><td>Click your <strong>username (top right) → Security credentials</strong></td></tr>
+        <tr><td>3</td><td>Scroll to <strong>"Access keys"</strong> section → click <strong>"Create access key"</strong></td></tr>
+        <tr><td>4</td><td>Select <strong>"CLI"</strong> as the use case → click Next → Create</td></tr>
+        <tr><td>5</td><td>Copy both values and save them somewhere safe (notepad is fine)</td></tr>
+      </table>
+      <table class="info-table">
+        <tr><th>Value</th><th>Looks like</th></tr>
+        <tr><td>AWS_ACCESS_KEY_ID</td><td>AKIAIOSFODNN7EXAMPLE</td></tr>
+        <tr><td>AWS_SECRET_ACCESS_KEY</td><td>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</td></tr>
+      </table>
+      <div class="info-box warn"><span class="info-icon">⚠️</span><span>You will <strong>never see the secret key again</strong> after closing this page. Copy it now!</span></div>
+      <button class="done-btn" onclick="markDone(4)">✓ Mark as done</button>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step-card" id="card-5">
+    <div class="step-header" onclick="toggleStep(5)">
+      <div class="step-num">5</div>
+      <div class="step-info">
+        <div class="step-title">Configure AWS CLI locally</div>
+        <div class="step-desc">So Terraform can run from your machine too (optional but useful)</div>
+      </div>
+      <span class="step-tag tag-aws">AWS CLI</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>Open your terminal and run:</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'aws configure')">copy</button>
+        <span class="cmd">aws configure</span>
+      </div>
+      <p>It will ask 4 questions. Answer them like this:</p>
+      <div class="code-block">
+<span class="key">AWS Access Key ID</span>     → <span class="val">paste your Access Key ID</span>
+<span class="key">AWS Secret Access Key</span> → <span class="val">paste your Secret Key</span>
+<span class="key">Default region name</span>   → <span class="str">us-east-1</span>
+<span class="key">Default output format</span> → <span class="str">json</span>
+      </div>
+      <p>Test it works:</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'aws s3 ls')">copy</button>
+        <span class="cmd">aws s3 ls</span>
+      </div>
+      <p>No error = you're connected to AWS! ✅</p>
+      <button class="done-btn" onclick="markDone(5)">✓ Mark as done</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!--  PHASE 3 – GitHub Setup               -->
+<!-- ══════════════════════════════════════ -->
+<div class="section">
+
+  <div class="phase-header">
+    <span class="phase-icon">🐙</span>
+    <div>
+      <div class="phase-title">Phase 3 — GitHub Setup</div>
+      <div class="phase-sub">Create your repo and add secrets</div>
+    </div>
+    <span class="phase-count">Steps 6–7</span>
+  </div>
+
+  <!-- Step 6 -->
+  <div class="step-card" id="card-6">
+    <div class="step-header" onclick="toggleStep(6)">
+      <div class="step-num">6</div>
+      <div class="step-info">
+        <div class="step-title">Create a new GitHub repository</div>
+        <div class="step-desc">This is where all your POC files will live</div>
+      </div>
+      <span class="step-tag tag-gh">GitHub</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <table class="info-table">
+        <tr><th>#</th><th>What to do</th></tr>
+        <tr><td>1</td><td>Go to <strong>github.com</strong> and log in with your personal account</td></tr>
+        <tr><td>2</td><td>Click the <strong>"+"</strong> button (top right) → <strong>"New repository"</strong></td></tr>
+        <tr><td>3</td><td>Name it: <code style="color:#ff9900">aws-static-poc</code></td></tr>
+        <tr><td>4</td><td>Set visibility: <strong>Private</strong> (safer for sandbox credentials)</td></tr>
+        <tr><td>5</td><td>Check <strong>"Add a README file"</strong> → Click <strong>"Create repository"</strong></td></tr>
+      </table>
+      <div class="info-box note"><span class="info-icon">💡</span><span>You'll now have an empty repo at <code>github.com/YOUR_USERNAME/aws-static-poc</code></span></div>
+      <button class="done-btn" onclick="markDone(6)">✓ Mark as done</button>
+    </div>
+  </div>
+
+  <!-- Step 7 -->
+  <div class="step-card" id="card-7">
+    <div class="step-header" onclick="toggleStep(7)">
+      <div class="step-num">7</div>
+      <div class="step-info">
+        <div class="step-title">Add AWS secrets to GitHub</div>
+        <div class="step-desc">So GitHub Actions can access your AWS account securely</div>
+      </div>
+      <span class="step-tag tag-gh">Secrets</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>GitHub Secrets store your credentials safely — the pipeline reads them without exposing them.</p>
+      <table class="info-table">
+        <tr><th>#</th><th>What to do</th></tr>
+        <tr><td>1</td><td>Inside your repo → click <strong>Settings</strong> tab</td></tr>
+        <tr><td>2</td><td>Left sidebar → <strong>Secrets and variables → Actions</strong></td></tr>
+        <tr><td>3</td><td>Click <strong>"New repository secret"</strong></td></tr>
+        <tr><td>4</td><td>Add the first secret (name + value from Step 4)</td></tr>
+        <tr><td>5</td><td>Click "Add secret" → repeat for the second</td></tr>
+      </table>
+      <table class="info-table">
+        <tr><th>Secret Name (exact!)</th><th>Value</th></tr>
+        <tr><td>AWS_ACCESS_KEY_ID</td><td>Your Access Key ID from Step 4</td></tr>
+        <tr><td>AWS_SECRET_ACCESS_KEY</td><td>Your Secret Key from Step 4</td></tr>
+      </table>
+      <div class="info-box warn"><span class="info-icon">⚠️</span><span>Secret names are <strong>case-sensitive</strong>. Type them exactly as shown above.</span></div>
+      <button class="done-btn" onclick="markDone(7)">✓ Mark as done</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!--  PHASE 4 – Upload Files               -->
+<!-- ══════════════════════════════════════ -->
+<div class="section">
+
+  <div class="phase-header">
+    <span class="phase-icon">📁</span>
+    <div>
+      <div class="phase-title">Phase 4 — Upload POC Files</div>
+      <div class="phase-sub">Clone the repo and add your project files</div>
+    </div>
+    <span class="phase-count">Steps 8–9</span>
+  </div>
+
+  <!-- Step 8 -->
+  <div class="step-card" id="card-8">
+    <div class="step-header" onclick="toggleStep(8)">
+      <div class="step-num">8</div>
+      <div class="step-info">
+        <div class="step-title">Clone the repo to your computer</div>
+        <div class="step-desc">Download your GitHub repo as a local folder</div>
+      </div>
+      <span class="step-tag tag-gh">Git</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>Open a terminal (Command Prompt / PowerShell / Terminal) and run:</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'git clone https://github.com/YOUR_USERNAME/aws-static-poc.git\ncd aws-static-poc')">copy</button>
+        <span class="comment"># Replace YOUR_USERNAME with your GitHub username</span>
+        <br><span class="cmd">git clone https://github.com/<span class="val">YOUR_USERNAME</span>/aws-static-poc.git</span>
+        <br><span class="cmd">cd aws-static-poc</span>
+      </div>
+      <p>You now have a local folder called <code style="color:#ff9900">aws-static-poc</code> on your computer.</p>
+      <button class="done-btn" onclick="markDone(8)">✓ Mark as done</button>
+    </div>
+  </div>
+
+  <!-- Step 9 -->
+  <div class="step-card" id="card-9">
+    <div class="step-header" onclick="toggleStep(9)">
+      <div class="step-num">9</div>
+      <div class="step-info">
+        <div class="step-title">Copy POC files into the folder</div>
+        <div class="step-desc">Add all the generated files into the correct folder structure</div>
+      </div>
+      <span class="step-tag tag-tf">Files</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>Create this exact folder structure inside <code style="color:#ff9900">aws-static-poc/</code>:</p>
+      <div class="code-block">
+aws-static-poc/
+├── <span class="str">index.html</span>                    <span class="comment">← your website file</span>
+├── terraform/
+│   ├── <span class="str">main.tf</span>                   <span class="comment">← AWS infrastructure</span>
+│   ├── <span class="str">variables.tf</span>              <span class="comment">← configuration</span>
+│   └── <span class="str">outputs.tf</span>                <span class="comment">← prints your URL</span>
+└── .github/
+    └── workflows/
+        └── <span class="str">deploy.yml</span>            <span class="comment">← pipeline</span>
+      </div>
+      <div class="info-box note"><span class="info-icon">💡</span><span>All 6 files were generated for you in the previous step. Just copy them from the download into this folder structure.</span></div>
+      <div class="info-box warn"><span class="info-icon">⚠️</span><span>The <code>.github</code> folder starts with a dot — make sure it's named exactly <code>.github</code> (not <code>github</code>)</span></div>
+      <button class="done-btn" onclick="markDone(9)">✓ Mark as done</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!--  PHASE 5 – Deploy!                    -->
+<!-- ══════════════════════════════════════ -->
+<div class="section">
+
+  <div class="phase-header">
+    <span class="phase-icon">🚀</span>
+    <div>
+      <div class="phase-title">Phase 5 — Deploy!</div>
+      <div class="phase-sub">Push code and watch it go live automatically</div>
+    </div>
+    <span class="phase-count">Steps 10–12</span>
+  </div>
+
+  <!-- Step 10 -->
+  <div class="step-card" id="card-10">
+    <div class="step-header" onclick="toggleStep(10)">
+      <div class="step-num">10</div>
+      <div class="step-info">
+        <div class="step-title">Push code to GitHub</div>
+        <div class="step-desc">This triggers the pipeline automatically</div>
+      </div>
+      <span class="step-tag tag-gh">Git Push</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>In your terminal, inside the <code style="color:#ff9900">aws-static-poc</code> folder, run these 3 commands:</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'git add .\ngit commit -m \"Initial POC deployment\"\ngit push origin main')">copy</button>
+        <span class="comment"># Stage all files</span>
+        <br><span class="cmd">git add .</span>
+        <br><br>
+        <span class="comment"># Save a snapshot</span>
+        <br><span class="cmd">git commit -m <span class="str">"Initial POC deployment"</span></span>
+        <br><br>
+        <span class="comment"># Upload to GitHub → triggers pipeline!</span>
+        <br><span class="cmd">git push origin main</span>
+      </div>
+      <div class="info-box tip"><span class="info-icon">✅</span><span>The moment you push, GitHub Actions starts running automatically. You don't need to do anything else!</span></div>
+      <button class="done-btn" onclick="markDone(10)">✓ Mark as done</button>
+    </div>
+  </div>
+
+  <!-- Step 11 -->
+  <div class="step-card" id="card-11">
+    <div class="step-header" onclick="toggleStep(11)">
+      <div class="step-num">11</div>
+      <div class="step-info">
+        <div class="step-title">Watch the pipeline run</div>
+        <div class="step-desc">Monitor each step in GitHub Actions (takes ~5 minutes)</div>
+      </div>
+      <span class="step-tag tag-gh">Monitoring</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <table class="info-table">
+        <tr><th>#</th><th>What to do</th></tr>
+        <tr><td>1</td><td>Go to your repo on github.com</td></tr>
+        <tr><td>2</td><td>Click the <strong>Actions</strong> tab (top navigation)</td></tr>
+        <tr><td>3</td><td>You'll see a workflow called <strong>"Deploy to AWS"</strong> running (orange dot = in progress)</td></tr>
+        <tr><td>4</td><td>Click it to see each step in real-time</td></tr>
+      </table>
+      <p>You'll see these steps completing one by one:</p>
+      <div class="code-block">
+<span class="str">✓</span> Checkout repository
+<span class="str">✓</span> Configure AWS credentials
+<span class="str">✓</span> Setup Terraform
+<span class="str">✓</span> Terraform Init
+<span class="str">✓</span> Terraform Plan
+<span class="str">✓</span> Terraform Apply       <span class="comment">← creates S3 + CloudFront</span>
+<span class="str">✓</span> Get Terraform outputs
+<span class="str">✓</span> Upload website to S3
+<span class="str">✓</span> Invalidate CloudFront cache
+<span class="str">✓</span> Print website URL      <span class="comment">← your URL is here!</span>
+      </div>
+      <div class="info-box warn"><span class="info-icon">⏱️</span><span>This takes about <strong>3–7 minutes</strong> on the first run. CloudFront setup takes the longest.</span></div>
+      <button class="done-btn" onclick="markDone(11)">✓ Mark as done</button>
+    </div>
+  </div>
+
+  <!-- Step 12 -->
+  <div class="step-card" id="card-12">
+    <div class="step-header" onclick="toggleStep(12)">
+      <div class="step-num">12</div>
+      <div class="step-info">
+        <div class="step-title">Open your live website! 🎉</div>
+        <div class="step-desc">Find your URL and see your site live on the internet</div>
+      </div>
+      <span class="step-tag tag-live">🌐 LIVE</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="step-body">
+      <p>Once all pipeline steps show a ✅ green checkmark:</p>
+      <table class="info-table">
+        <tr><th>#</th><th>What to do</th></tr>
+        <tr><td>1</td><td>Click the <strong>"Print website URL"</strong> step in Actions</td></tr>
+        <tr><td>2</td><td>Copy the URL (looks like the one below)</td></tr>
+        <tr><td>3</td><td>Paste it in your browser and hit Enter</td></tr>
+      </table>
+      <div class="url-box">🌐 https://d1abc23xyz456.cloudfront.net</div>
+      <div class="info-box tip"><span class="info-icon">🎉</span><span>Your website is <strong>live on the internet</strong>, secured with HTTPS, served globally via AWS CloudFront CDN!</span></div>
+      <p><strong>Want to make changes?</strong> Just edit <code style="color:#ff9900">index.html</code>, then run:</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this,'git add index.html\ngit commit -m \"Update site\"\ngit push origin main')">copy</button>
+        <span class="cmd">git add index.html</span>
+        <br><span class="cmd">git commit -m <span class="str">"Update site"</span></span>
+        <br><span class="cmd">git push origin main</span>
+      </div>
+      <p>The pipeline auto-deploys in ~2 minutes. That's CI/CD! 🚀</p>
+      <button class="done-btn" onclick="markDone(12)">✓ Mark as done</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Final congrats box ── -->
+<div class="final-box">
+  <div class="final-card">
+    <h2>🎊 You just built a real DevOps pipeline!</h2>
+    <p>You learned the same tools used by professional cloud engineers every day.<br>AWS · Terraform · GitHub Actions · S3 · CloudFront · CI/CD</p>
+    <div class="url-box" id="finalUrl">Your URL will appear after Step 12 ↑</div>
+    <p style="margin-top:12px; font-size:0.8rem;">When done with the POC, destroy AWS resources to avoid charges:<br>
+    <code style="color:#ff9900; font-size:0.85rem;">cd terraform && terraform destroy -auto-approve</code></p>
+  </div>
+</div>
+
+<script>
+  const TOTAL = 12;
+  let completed = new Set();
+
+  function toggleStep(n) {
+    const card = document.getElementById('card-' + n);
+    card.classList.toggle('open');
+  }
+
+  function markDone(n) {
+    const card = document.getElementById('card-' + n);
+    if (completed.has(n)) {
+      completed.delete(n);
+      card.classList.remove('completed');
+    } else {
+      completed.add(n);
+      card.classList.add('completed');
+      card.classList.remove('open');
+    }
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const count = completed.size;
+    const pct = Math.round((count / TOTAL) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').innerHTML =
+      '<span>' + count + '</span> of ' + TOTAL + ' steps completed' +
+      (count === TOTAL ? ' 🎉' : '');
+  }
+
+  function copyCode(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1500);
+    });
+  }
+
+  // Open step 1 by default
+  document.getElementById('card-1').classList.add('open');
+</script>
+</body>
+</html>
